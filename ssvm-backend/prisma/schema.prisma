@@ -1,0 +1,388 @@
+// ═══════════════════════════════════════════
+// SSVM College Square — Prisma Schema
+// Full CMS + Multi-Portal School Platform
+// ═══════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───
+
+enum Role {
+  ADMIN
+  STUDENT
+  PARENT
+  ALUMNI
+}
+
+enum NoticeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EventStatus {
+  PLANNING
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
+
+enum FeeStatus {
+  PAID
+  PENDING
+  OVERDUE
+  PARTIAL
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HOLIDAY
+}
+
+enum AssignmentStatus {
+  PENDING
+  SUBMITTED
+  GRADED
+}
+
+// ─── USERS ───
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        Role
+  phone       String?
+  avatar      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  student       Student?
+  parent        Parent?
+  alumni        Alumni?
+  notices       Notice[]       @relation("NoticeAuthor")
+  events        Event[]        @relation("EventCreator")
+  sentMessages  Message[]      @relation("MessageSender")
+  receivedMsgs  Message[]      @relation("MessageReceiver")
+
+  @@map("users")
+}
+
+// ─── STUDENT ───
+
+model Student {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  rollNo      String
+  class       String
+  section     String
+  session     String   @default("2025-26")
+  dob         DateTime?
+  guardianName String?
+  bloodGroup  String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent      Parent?  @relation(fields: [parentId], references: [id])
+  parentId    String?
+
+  attendance  Attendance[]
+  results     Result[]
+  fees        Fee[]
+  submissions AssignmentSubmission[]
+
+  @@index([class, section])
+  @@index([session])
+  @@map("students")
+}
+
+// ─── PARENT ───
+
+model Parent {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  occupation  String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children    Student[]
+
+  @@map("parents")
+}
+
+// ─── ALUMNI ───
+
+model Alumni {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  batch         String
+  currentRole   String?
+  company       String?
+  achievement   String?
+  isFeatured    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contributions Contribution[]
+
+  @@map("alumni")
+}
+
+// ─── NOTICES ───
+
+model Notice {
+  id          String       @id @default(cuid())
+  title       String
+  content     String
+  category    String       @default("General")
+  status      NoticeStatus @default(DRAFT)
+  attachment  String?
+  expiryDate  DateTime?
+  views       Int          @default(0)
+  authorId    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  author      User         @relation("NoticeAuthor", fields: [authorId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([category])
+  @@map("notices")
+}
+
+// ─── EVENTS ───
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  endDate     DateTime?
+  venue       String
+  category    String      @default("General")
+  status      EventStatus @default(PLANNING)
+  rsvpCount   Int         @default(0)
+  image       String?
+  creatorId   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  creator     User        @relation("EventCreator", fields: [creatorId], references: [id])
+
+  @@index([date, status])
+  @@index([category])
+  @@map("events")
+}
+
+// ─── FACULTY ───
+
+model Faculty {
+  id            String   @id @default(cuid())
+  name          String
+  designation   String
+  department    String
+  qualification String?
+  experience    String?
+  email         String?
+  phone         String?
+  photo         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("faculty")
+}
+
+// ─── GALLERY ───
+
+model GalleryImage {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   @default("Campus")
+  imageUrl    String
+  description String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, isPublished])
+  @@map("gallery_images")
+}
+
+// ─── FEES ───
+
+model Fee {
+  id          String    @id @default(cuid())
+  studentId   String
+  amount      Float
+  type        String
+  status      FeeStatus @default(PENDING)
+  dueDate     DateTime
+  paidDate    DateTime?
+  receiptNo   String?
+  session     String    @default("2025-26")
+  remarks     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, session])
+  @@index([status])
+  @@map("fees")
+}
+
+// ─── RESULTS ───
+
+model Result {
+  id          String   @id @default(cuid())
+  studentId   String
+  examName    String
+  subject     String
+  totalMarks  Float
+  obtained    Float
+  grade       String?
+  session     String   @default("2025-26")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("results")
+}
+
+// ─── ATTENDANCE ───
+
+model Attendance {
+  id          String           @id @default(cuid())
+  studentId   String
+  date        DateTime
+  status      AttendanceStatus @default(PRESENT)
+  remarks     String?
+  createdAt   DateTime         @default(now())
+
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@map("attendance")
+}
+
+// ─── ASSIGNMENTS ───
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  subject     String
+  class       String
+  description String?
+  dueDate     DateTime
+  attachment  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  submissions AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id            String           @id @default(cuid())
+  assignmentId  String
+  studentId     String
+  status        AssignmentStatus @default(PENDING)
+  submittedAt   DateTime?
+  grade         String?
+  feedback      String?
+  attachment    String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  assignment    Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student       Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@map("assignment_submissions")
+}
+
+// ─── MESSAGES ───
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  subject     String
+  content     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiver    User     @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@map("messages")
+}
+
+// ─── ALUMNI CONTRIBUTIONS ───
+
+model Contribution {
+  id          String   @id @default(cuid())
+  alumniId    String
+  amount      Float
+  purpose     String
+  date        DateTime @default(now())
+  receiptNo   String?
+  createdAt   DateTime @default(now())
+
+  alumni      Alumni   @relation(fields: [alumniId], references: [id], onDelete: Cascade)
+
+  @@map("contributions")
+}
+
+// ─── SITE CONTENT (CMS) ───
+
+model SiteContent {
+  id          String   @id @default(cuid())
+  section     String
+  key         String
+  value       String   @db.Text
+  type        String   @default("text")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([section, key])
+  @@map("site_content")
+}
+
+// ─── TESTIMONIALS ───
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  content     String   @db.Text
+  avatar      String?
+  rating      Int      @default(5)
+  isPublished Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("testimonials")
+}
