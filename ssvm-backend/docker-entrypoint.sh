@@ -71,7 +71,7 @@ export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhos
 npx prisma generate
 
 # Push schema
-npx prisma db push --skip-generate --accept-data-loss
+npx prisma db push --accept-data-loss
 echo "✅  Schema pushed."
 
 # ── Step 5: Seed if database is empty ──

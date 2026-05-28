@@ -18,7 +18,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -34,13 +34,21 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   const refreshUser = useCallback(async () => {
     try {
-      // Calls /api/auth/me which proxies to backend via next.config rewrites
-      const res = await fetch("/api/auth/me", { credentials: "include" });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+      const res = await fetch("/api/auth/me", {
+        credentials: "include",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
       if (res.ok) {
         const data = await res.json();
         setUser(data.data);
@@ -48,9 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
     } catch {
+      // Network error, timeout, or backend not running — treat as not authenticated
       setUser(null);
     } finally {
       setLoading(false);
+      setInitialCheckDone(true);
     }
   }, []);
 
@@ -58,20 +68,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  // Route protection
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch { /* ignore */ }
+    setUser(null);
+    router.push("/");
+  };
+
+  // Route protection — only runs after initial auth check completes
   useEffect(() => {
-    if (loading) return;
+    if (!initialCheckDone) return;
 
     const publicPaths = ["/", "/login"];
     const isPublic = publicPaths.includes(pathname);
 
-    if (!user && !isPublic) {
-      router.push("/login");
+    // Always allow the login page to show — never redirect away from /login
+    // unless the user is truly authenticated (token validated by API)
+    if (pathname === "/login") {
+      if (user) {
+        // User explicitly navigated to login page while authenticated
+        // Force logout to allow re-authentication instead of auto-redirecting
+        logout();
+      }
+      // If no user, just show the login page — don't redirect
       return;
     }
 
-    // Allow users to see the login page even if they have an active session
-    // (We removed the auto-redirect here so they can switch accounts)
+    // Redirect to root if not authenticated and trying to access protected route
+    if (!user && !isPublic) {
+      router.push("/");
+      return;
+    }
 
     // Role-based route protection
     if (user) {
@@ -83,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push(`/${role}`);
       }
     }
-  }, [user, loading, pathname, router]);
+  }, [user, initialCheckDone, pathname, router]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -98,8 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.data.user);
-        router.push(`/${data.data.user.role.toLowerCase()}`);
-        return { success: true };
+        return { success: true, role: data.data.user.role };
       }
 
       return { success: false, error: data.error || "Login failed" };
@@ -108,13 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch { /* ignore */ }
-    setUser(null);
-    router.push("/login");
-  };
+
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>

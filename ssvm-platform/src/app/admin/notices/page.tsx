@@ -140,7 +140,7 @@ export default function NoticesPage() {
               <button onClick={() => openEdit(n)} className="text-[12px] text-primary font-semibold bg-transparent border-none cursor-pointer font-[var(--font-heading)]">
                 Edit
               </button>
-              <button onClick={() => handleDelete(n.id as string)} className="text-[12px] text-danger font-semibold bg-transparent border-none cursor-pointer font-[var(--font-heading)]">
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(n.id as string); }} className="text-[12px] text-danger font-semibold bg-transparent border-none cursor-pointer font-[var(--font-heading)]">
                 Delete
               </button>
             </div>,

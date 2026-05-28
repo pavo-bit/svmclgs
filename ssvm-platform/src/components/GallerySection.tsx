@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import Image from "next/image";
 import { useGallery } from "@/lib/api-hooks";
 
 const tabs = ["All", "Campus", "Facilities", "Events", "Academic", "Sports"];
@@ -97,12 +96,12 @@ export function GallerySection() {
                 transition={{ delay: index * 0.05 }}
                 className="aspect-square rounded-xl overflow-hidden cursor-pointer hover:shadow-xl transition-all group relative"
               >
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={item.imageUrl}
                   alt={item.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                   <div>

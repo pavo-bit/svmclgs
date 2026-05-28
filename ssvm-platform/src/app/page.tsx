@@ -4,11 +4,9 @@ import {
   NewNavbar,
   CinematicHeroSection,
   StatsSection,
-  CoreValuesSection,
-  AcademicProgramsSection,
-  EventsNoticesSection,
-  GallerySection,
-  AdmissionCTASection,
+  WelcomeSection,
+  LeadershipSection,
+  StudentAchievementsSection,
   NewFooter,
 } from "@/components";
 
@@ -19,11 +17,9 @@ export default function HomePage() {
       <main>
         <CinematicHeroSection />
         <StatsSection />
-        <CoreValuesSection />
-        <AcademicProgramsSection />
-        <EventsNoticesSection />
-        <GallerySection />
-        <AdmissionCTASection />
+        <WelcomeSection />
+        <LeadershipSection />
+        <StudentAchievementsSection />
       </main>
       <NewFooter />
     </>

@@ -70,7 +70,7 @@ WORKDIR /app/backend
 
 # Copy backend production dependencies
 COPY ssvm-backend/package.json ssvm-backend/package-lock.json* ./
-RUN npm ci --omit=dev --prefer-offline --no-audit
+RUN npm ci --prefer-offline --no-audit
 
 # Copy Prisma schema
 COPY ssvm-backend/prisma ./prisma/
@@ -154,7 +154,7 @@ cd /app/backend
 # Wait for database to be ready and sync schema
 echo "⏳  Waiting for database connection..."
 for i in {1..30}; do
-    if npx prisma db push --skip-generate 2>/dev/null; then
+    if npx prisma db push 2>/dev/null; then
         echo "✅  Database connected and schema synced."
         break
     fi
@@ -168,12 +168,12 @@ done
 
 # Check if database needs seeding
 echo "🌱  Checking if database needs seeding..."
-SEED_CHECK=$(npx prisma db execute --stdin <<SQL
-SELECT COUNT(*) as count FROM "User";
+SEED_CHECK=$(npx prisma db execute --schema=prisma/schema.prisma --stdin <<SQL
+SELECT COUNT(*) as count FROM "users";
 SQL
-2>/dev/null | grep -o '[0-9]*' | head -1 || echo "0")
+2>/dev/null | grep -o '[0-9]*' | head -1)
 
-if [ "$SEED_CHECK" = "0" ]; then
+if [ -z "$SEED_CHECK" ] || [ "$SEED_CHECK" = "0" ]; then
     echo "🌱  Database is empty — running seed script..."
     npx tsx prisma/seed.ts
     echo "✅  Seed completed."

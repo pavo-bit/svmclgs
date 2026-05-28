@@ -3,20 +3,25 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { LoginModal } from "./LoginModal";
+
+import { useAuth } from "@/lib/auth-context";
 
 const navLinks = [
   { name: "Home", href: "/" },
-  { name: "About Us", href: "#about" },
-  { name: "Academics", href: "#academics" },
-  { name: "Admissions", href: "#admissions" },
-  { name: "Campus Life", href: "#campus" },
-  { name: "News & Events", href: "#events" },
-  { name: "Contact", href: "#contact" },
+  { name: "Academics", href: "/academics" },
+  { name: "Admissions", href: "/admissions" },
+  { name: "Gallery", href: "/gallery" },
+  { name: "News & Events", href: "/events" },
+  { name: "About Us", href: "/about" },
+  { name: "Contact", href: "/contact" },
 ];
 
 export function NewNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -66,12 +71,21 @@ export function NewNavbar() {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4 flex-shrink-0 ml-auto">
-            <Link
-              href="/login"
-              className="px-10 py-3.5 rounded bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[16px] font-bold uppercase tracking-widest hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap border border-transparent"
-            >
-              Login
-            </Link>
+            {user ? (
+              <Link
+                href={`/${user.role.toLowerCase()}`}
+                className="px-10 py-3.5 rounded bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[16px] font-bold uppercase tracking-widest hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap border border-transparent no-underline"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="px-10 py-3.5 rounded bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[16px] font-bold uppercase tracking-widest hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap border border-transparent cursor-pointer"
+              >
+                Login
+              </button>
+            )}
           </div>
 
           {/* Mobile Hamburger */}
@@ -111,16 +125,29 @@ export function NewNavbar() {
                 </Link>
               </motion.div>
             ))}
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="mt-6 block text-center px-7 py-3.5 rounded bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[16px] font-bold uppercase tracking-widest hover:from-orange-600 hover:to-orange-700 transition-all duration-300"
-            >
-              Login
-            </Link>
+            {user ? (
+              <Link
+                href={`/${user.role.toLowerCase()}`}
+                onClick={() => setMobileOpen(false)}
+                className="mt-6 block text-center px-7 py-3.5 rounded bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[16px] font-bold uppercase tracking-widest hover:from-orange-600 hover:to-orange-700 transition-all duration-300 no-underline"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  setIsLoginModalOpen(true);
+                }}
+                className="mt-6 w-full block text-center px-7 py-3.5 rounded bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[16px] font-bold uppercase tracking-widest hover:from-orange-600 hover:to-orange-700 transition-all duration-300 border-none cursor-pointer"
+              >
+                Login
+              </button>
+            )}
           </motion.div>
         ) : null}
       </AnimatePresence>
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </>
   );
 }

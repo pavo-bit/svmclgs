@@ -115,7 +115,7 @@ export default function EventsPage() {
                   <option value="COMPLETED">Completed</option>
                   <option value="CANCELLED">Cancelled</option>
                 </select>
-                <button onClick={() => handleDelete(event.id as string)}
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(event.id as string); }}
                   className="px-3 py-2 rounded-lg text-[11px] font-semibold text-danger bg-danger/10 border-none cursor-pointer font-[var(--font-heading)]">
                   Delete
                 </button>

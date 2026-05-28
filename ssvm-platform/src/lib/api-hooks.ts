@@ -20,10 +20,31 @@ export async function apiCall(url: string, method: "POST" | "PUT" | "DELETE" = "
     headers: body instanceof FormData ? {} : { "Content-Type": "application/json" },
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
   };
-  const res = await fetch(url, opts);
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || "Request failed");
-  return data.data;
+
+  let res: Response;
+  try {
+    res = await fetch(url, opts);
+  } catch {
+    throw new Error("Network error — check your connection and try again");
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    // Response was not JSON (e.g., proxy error, HTML error page)
+    if (!res.ok) {
+      throw new Error(`Server error (${res.status}) — please try again`);
+    }
+    // Non-JSON success response — return null
+    return null;
+  }
+
+  if (!data.success) {
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+
+  return data.data ?? null;
 }
 
 export function invalidate(key: string) { globalMutate(key); }
@@ -47,3 +68,4 @@ export function useContributions(alumniId?: string) { return useSWR(`/api/alumni
 export function useTestimonials() { return useSWR("/api/testimonials", fetcher); }
 export function useSiteContent(section?: string) { return useSWR(`/api/site-content${section ? `?section=${section}` : ""}`, fetcher); }
 export function useAnalytics() { return useSWR("/api/analytics", fetcher); }
+export function usePublicStats() { return useSWR("/api/stats/public", fetcher); }

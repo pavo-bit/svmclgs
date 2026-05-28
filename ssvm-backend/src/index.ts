@@ -24,6 +24,7 @@ import facultyRoutes from "./routes/faculty";
 import galleryRoutes from "./routes/gallery";
 import alumniRoutes from "./routes/alumni";
 import cmsRoutes from "./routes/cms";
+import statsRoutes from "./routes/stats";
 
 // ─── Validate environment on startup ───
 const env = getEnv();
@@ -84,6 +85,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/faculty", facultyRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/alumni", alumniRoutes);
+app.use("/api/stats", statsRoutes);
 app.use("/api", cmsRoutes);
 
 // ─── Health Check ───

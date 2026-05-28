@@ -4,15 +4,9 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { gsap } from "gsap";
 import Link from "next/link";
-import { useGallery } from "@/lib/api-hooks";
+import { useGallery, usePublicStats } from "@/lib/api-hooks";
 
-const defaultHeroImages = [
-  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546410531-ea4cea477149?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=2000&auto=format&fit=crop",
-];
+
 
 // Slide data with rich content
 const slides = [
@@ -73,14 +67,6 @@ const slides = [
   },
 ];
 
-// Achievement stats
-const achievements = [
-  { icon: "🏆", value: "98%", label: "Board Results", color: "from-orange-500 to-orange-600" },
-  { icon: "👥", value: "3,200+", label: "Happy Students", color: "from-blue-500 to-blue-600" },
-  { icon: "🎓", value: "120+", label: "Expert Teachers", color: "from-purple-500 to-purple-600" },
-  { icon: "🏅", value: "250+", label: "Awards Won", color: "from-red-500 to-red-600" },
-];
-
 export function CinematicHeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -89,10 +75,38 @@ export function CinematicHeroSection() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   const { data: rawHeroGallery } = useGallery("Hero");
+  const { data: statsData } = usePublicStats();
+  const { data: rawPillarsGallery } = useGallery("Pillars");
+  
   const heroGallery = Array.isArray(rawHeroGallery) ? rawHeroGallery : rawHeroGallery?.data || [];
-  const heroImages = heroGallery.length > 0
-    ? heroGallery.map((img: any) => img.imageUrl)
-    : defaultHeroImages;
+  const heroImages = heroGallery.map((img: any) => img.imageUrl);
+
+  const pillarsGallery = Array.isArray(rawPillarsGallery) ? rawPillarsGallery : rawPillarsGallery?.data || [];
+  const pillars = [
+    { role: "Pradhan Acharya", data: pillarsGallery.find((img: any) => img.title === "Pradhan Acharya") },
+    { role: "President", data: pillarsGallery.find((img: any) => img.title === "President") },
+    { role: "Secretary", data: pillarsGallery.find((img: any) => img.title === "Secretary") },
+  ].filter(p => p.data);
+
+  // Dynamic achievements from API with fallback to defaults
+  const achievements = useMemo(() => {
+    if (!statsData) {
+      // Default fallback values while loading
+      return [
+        { icon: "🏆", value: "98%", label: "Board Results", color: "from-orange-500 to-orange-600" },
+        { icon: "👥", value: "3,200+", label: "Happy Students", color: "from-blue-500 to-blue-600" },
+        { icon: "🎓", value: "120+", label: "Expert Teachers", color: "from-purple-500 to-purple-600" },
+        { icon: "🏅", value: "250+", label: "Awards Won", color: "from-red-500 to-red-600" },
+      ];
+    }
+
+    return [
+      { icon: "🏆", value: statsData.boardResults || "98%", label: "Board Results", color: "from-orange-500 to-orange-600" },
+      { icon: "👥", value: statsData.studentCount || "3,200+", label: "Happy Students", color: "from-blue-500 to-blue-600" },
+      { icon: "🎓", value: statsData.teacherCount || "120+", label: "Expert Teachers", color: "from-purple-500 to-purple-600" },
+      { icon: "🏅", value: statsData.awardsCount || "250+", label: "Awards Won", color: "from-red-500 to-red-600" },
+    ];
+  }, [statsData]);
 
   // Pre-compute random particle positions to avoid impure Math.random() calls during render
   const particles = useMemo(() =>
@@ -216,29 +230,37 @@ export function CinematicHeroSection() {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex items-center overflow-hidden pt-[80px]"
+      className="relative min-h-screen flex items-center overflow-hidden pt-[110px] pb-[75px]"
     >
-      {/* Animated Background */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`bg-${currentSlide}`}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
-          className="absolute inset-0"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroImages[currentSlide % heroImages.length]}
-            alt={`Hero Background ${currentSlide + 1}`}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          {/* Overlay to ensure text readability */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${slide.bgGradient} opacity-60 mix-blend-multiply`} />
-          <div className="absolute inset-0 bg-slate-900/60" />
-        </motion.div>
-      </AnimatePresence>
+      {/* 1. Base dark background for entire screen */}
+      <div className="absolute inset-0 bg-[#0A1628]" />
+
+      {/* 2. Photo Cinematic Sliding (Strictly below Navbar) */}
+      <div className="absolute top-[110px] left-0 right-0 bottom-0 overflow-hidden z-0">
+        <AnimatePresence mode="wait">
+          {heroImages.length > 0 && (
+            <motion.div
+              key={`bg-${currentSlide}`}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={heroImages[currentSlide % heroImages.length]}
+                alt={`Hero Background ${currentSlide + 1}`}
+                className="absolute inset-0 w-full h-full object-cover object-center"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* 3. Gradient & Dark Overlay for entire screen */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${slide.bgGradient} opacity-60 mix-blend-multiply transition-colors duration-1000 pointer-events-none`} />
+      <div className="absolute inset-0 bg-slate-900/60 pointer-events-none" />
 
       {/* Animated Particles/Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -377,6 +399,33 @@ export function CinematicHeroSection() {
                     </button>
                   ))}
                 </div>
+
+                {/* Pillars Section */}
+                {pillars.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1, duration: 0.8 }}
+                    className="mt-10"
+                  >
+                    <div className="text-white/60 text-[11px] uppercase tracking-[0.2em] font-semibold mb-3 flex items-center gap-3">
+                      <span className="w-6 h-[1px] bg-white/30"></span> Core Leadership
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {pillars.map((pillar, idx) => (
+                        <div key={idx} className="group relative flex items-center gap-3 bg-white/5 backdrop-blur-md border border-white/10 rounded-full py-1.5 px-2 pr-5 hover:bg-white/10 transition-colors cursor-pointer">
+                          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 group-hover:border-white/50 transition-colors shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={pillar.data.imageUrl} alt={pillar.role} className="w-full h-full object-cover" />
+                          </div>
+                          <div>
+                            <p className="text-white/90 text-[12px] font-bold leading-tight">{pillar.role}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           </AnimatePresence>

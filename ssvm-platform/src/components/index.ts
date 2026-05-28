@@ -11,3 +11,7 @@ export { TestimonialsSection } from "./TestimonialsSection";
 export { NewFooter } from "./NewFooter";
 export { BackButton } from "./BackButton";
 export { DashboardLayout } from "./DashboardLayout";
+export { LoginModal } from "./LoginModal";
+export { WelcomeSection } from "./WelcomeSection";
+export { LeadershipSection } from "./LeadershipSection";
+export { StudentAchievementsSection } from "./StudentAchievementsSection";

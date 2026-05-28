@@ -57,7 +57,7 @@ export default function FacultyPage() {
                 {f.experience ? <span>📅 {f.experience as string}</span> : null}
                 {f.email ? <span>📧 {f.email as string}</span> : null}
               </div>
-              <button onClick={() => handleDelete(f.id as string)} className="text-[12px] text-danger font-semibold bg-transparent border-none cursor-pointer font-[var(--font-heading)]">Remove</button>
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(f.id as string); }} className="text-[12px] text-danger font-semibold bg-transparent border-none cursor-pointer font-[var(--font-heading)]">Remove</button>
             </motion.div>
           ))}
         </div>

@@ -1,22 +1,38 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-
-const stats = [
-  { icon: "🏛️", year: "1952", label: "Established", color: "from-blue-500 to-blue-600" },
-  { icon: "👥", value: "3,200+", label: "Students", color: "from-green-500 to-green-600" },
-  { icon: "🎓", value: "120+", label: "Expert Teachers", color: "from-purple-500 to-purple-600" },
-  { icon: "🏆", value: "98%", label: "Board Results", color: "from-orange-500 to-orange-600" },
-  { icon: "🏅", value: "250+", label: "Awards Won", color: "from-red-500 to-red-600" },
-];
+import { useEffect, useState, useMemo } from "react";
+import { usePublicStats } from "@/lib/api-hooks";
 
 export function StatsSection() {
   const [isVisible, setIsVisible] = useState(false);
+  const { data: statsData } = usePublicStats();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Dynamic stats with fallback to defaults
+  const stats = useMemo(() => {
+    if (!statsData) {
+      // Default fallback values while loading
+      return [
+        { icon: "🏛️", year: "1952", label: "Established", color: "from-blue-500 to-blue-600" },
+        { icon: "👥", value: "3,200+", label: "Students", color: "from-green-500 to-green-600" },
+        { icon: "🎓", value: "120+", label: "Expert Teachers", color: "from-purple-500 to-purple-600" },
+        { icon: "🏆", value: "98%", label: "Board Results", color: "from-orange-500 to-orange-600" },
+        { icon: "🏅", value: "250+", label: "Awards Won", color: "from-red-500 to-red-600" },
+      ];
+    }
+
+    return [
+      { icon: "🏛️", year: statsData.establishmentYear || "1952", label: "Established", color: "from-blue-500 to-blue-600" },
+      { icon: "👥", value: statsData.studentCount || "3,200+", label: "Students", color: "from-green-500 to-green-600" },
+      { icon: "🎓", value: statsData.teacherCount || "120+", label: "Expert Teachers", color: "from-purple-500 to-purple-600" },
+      { icon: "🏆", value: statsData.boardResults || "98%", label: "Board Results", color: "from-orange-500 to-orange-600" },
+      { icon: "🏅", value: statsData.awardsCount || "250+", label: "Awards Won", color: "from-red-500 to-red-600" },
+    ];
+  }, [statsData]);
 
   return (
     <section className="relative py-0 -mt-16 z-10">
